@@ -35,7 +35,7 @@ m_fe <- rma(
   # yi = yi,   # Can omit the ~ 1 if just an intercept
   vi = vi,
   # sei = sqrt(vi),
-  # weights = wt,
+  # weights = ni,
   data = dat,
   method = "FE",
   test = "t"
@@ -68,7 +68,11 @@ m_re_nwt <- rma(
 m_re
 predict(m_re)
 
+predict(m_re, transf = exp)
+
 # use update() to refit the model and add the `slab` argument
 m_re <- update(m_re, slab = label)
 forest(m_re, header = TRUE, addpred = TRUE)
+
+forest(m_re, header = TRUE, addpred = TRUE, transf = exp)
 

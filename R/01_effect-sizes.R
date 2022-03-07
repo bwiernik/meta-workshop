@@ -9,6 +9,7 @@ dat_stroke <- escalc(
   data = dat.normand1999,
   measure = "SMD",
   # measure = "SMDH", # heterogeneous group SDs
+  # measure = "SMD1", # control-group SD (sd2i); needs development version of metafor
   # vtype = "LS", # large-sample variance approximation (default)
   vtype = "AV", # compute variance using N-weighted average SMD across studies
   m1i = m1i, sd1i = sd1i, n1i = n1i,
