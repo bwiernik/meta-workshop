@@ -2,7 +2,7 @@ library(tidyverse)
 library(metafor)
 
 # Load helper functions to facilitate predictions
-source("ma_helper_functions.R")
+source(file.path("R", "ma_helper_functions.R"))
 
 # Meta-regression - continuous moderators
 
@@ -41,7 +41,7 @@ mod_bcg_lat
 mod_bcg_re$tau2
 
 # Forest plot
-forest(mod_bcg_lat)
+forest(mod_bcg_lat, order = dat_bcg$ablat)
 
 # Predictions
 
@@ -121,6 +121,7 @@ dat_interview <- escalc(
   drop_na(struct, type)
 
 
+
 mod_interview_re <- rma(
   yi = yi ~ 1,
   vi = vi,
@@ -172,3 +173,13 @@ dat_interview |>
   ungroup() |>
   tidyr::complete(struct, type) |>
   full_join(predict_structType)
+
+
+mod_structured_job <- rma(
+  yi = yi ~ 1,
+  vi = vi,
+  slab = study,
+  method = "REML", test = "knha",
+  data = filter(dat_interview, struct == "Structured", type == "Job-related")
+)
+
