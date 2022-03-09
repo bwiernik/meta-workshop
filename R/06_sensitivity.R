@@ -21,6 +21,8 @@ mod_mg
 # Leave-1-Out diagnostics
 mod_loo <- leave1out(mod_mg)
 
+mod_loo
+
 range(mod_loo$estimate)
 range(sqrt(mod_loo$tau2))
 
@@ -47,6 +49,15 @@ with(mod_loo,
 mod_infl <- influence(mod_mg)
 
 mod_infl
+
+plot(mod_infl)
+
+dat_mg <- mutate(dat_mg, wt = weights(mod_mg))
+dat_mg[13, "wt"] <- median(dat_mg$wt)
+
+mod_mg_sensitivy <- rma(
+  yi = yi, vi = vi, data = dat_mg, weights = wt, test =
+)
 
 # Normality assumption
 
