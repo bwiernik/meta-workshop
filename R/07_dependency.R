@@ -17,6 +17,8 @@ mod_school_re <- rma(
 )
 mod_school_re
 
+# install.packages("clubSandwich")
+
 ## Robust model
 mod_school_robust <- robust(
   mod_school_re,
@@ -56,16 +58,16 @@ dat_teeth <- dat.berkey1998
 ### If all correlations among outcomes are known
 V <- vcalc(
   data = dat_teeth,
-  vi = vi,
-  cluster=author,
-  rvars=c(v1i, v2i)
+  vi = 1,
+  cluster = author,
+  rvars = c(v1i, v2i)
 )
 
 ### If some correlation information is missing
 V <- vcalc(
   data = dat_teeth,
   vi = vi,
-  cluster=author,
+  cluster = author,
   type = outcome, rho = .5
 )
   # Basic options with vcalc()
@@ -95,18 +97,29 @@ V <- vcalc(
 
 V <- vcalc(
   data = dat_teeth,
-  vi = vi,
+  vi = 1,
   cluster=author,
   rvars=c(v1i, v2i)
 )
 
 ## Specify the model
 mod_teeth_mv <- rma.mv(
-  yi, V, mods = ~ 0 + outcome,
+  yi = yi ~ 0 + outcome,
+  V = V,
   random = ~ outcome | author,
-  struct = "UN", data = dat_teeth
+  struct = "UN",
+  data = dat_teeth
 )
 mod_teeth_mv
 
 anova(mod_teeth_mv, L = c(1, -1))
+
+## rcalc()
+
+rcalc(
+  x = rxyi ~ x_name + y_name | sample_id,
+  ni = n,
+  rtoz = TRUE,
+  data = psychmeta::data_r_meas_multi
+)
 
