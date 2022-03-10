@@ -99,6 +99,7 @@ funnel(mod_mg, refline = 0) # centering funnel plot at 0
 se <- seq(from = 0, to = max(dat_mg$sei) * 1.05, length.out = 100)
 lines(x = coef(pet$fit)[1] + coef(pet$fit)[2] * se, y = se, lwd = 2, col = "darkblue")
 lines(x = coef(peese$fit)[1] + coef(peese$fit)[2] * se^2, y = se, lwd = 2, lty = "dashed", col = "darkgreen")
+abline(v = predict(mod_mg)$pred, lwd = 2)
 
 
 ## Trim and Fill
@@ -158,7 +159,10 @@ with(dat_mg, fsn(yi, vi, type = "Orwin", weighted = TRUE, target = log(.90)))
 # p-value based methods
 
 ## contour-enhanced funnel plot
-funnel(mod_mg, level=c(90, 95, 99), shade=c("white", "gray55", "gray75"), refline=0, legend=TRUE)
+funnel(mod_mg,
+       level=c(90, 95, 99),
+       shade=c("white", "gray55", "gray75"),
+       refline=0, legend=TRUE)
 
 ## p-uniform
 with(dat_mg,
