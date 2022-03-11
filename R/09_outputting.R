@@ -11,6 +11,8 @@ library(knitr)
 library(tidyverse)
 ```
 
+Regualr text!
+
 ```{r}
 # dat <- read_csv(file.path("data", "data_sheet.csv"))
 ```

@@ -96,3 +96,4 @@ mod_ability <- ma_r(
 # get data for further examination with metafor
 dat_corrected <- get_escalc(mod_ability)[[1]]$artifact_distribution$true_score
 
+metabulate(mod_ability, file = "results.docx")
