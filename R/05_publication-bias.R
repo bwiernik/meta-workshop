@@ -77,6 +77,16 @@ dat_consc <- dat_consc |>
 funnel(mod_mg) # with 95% CI around _mean effect size_
 funnel(mod_mg, addtau2 = TRUE) # with 95% PI for individual true outcomes
 
+## Contour-enhanced funnel plot
+funnel(
+  mod_mg,
+  level = c(90, 95, 99), # add confidence contours
+  shade = c("white", "gray55", "gray75"), # colors for confidence regions
+  refline = 0, # funnel reference line at 0, rather than mean effect size
+  legend = TRUE
+)
+
+
 ## PET
 pet <- regtest(mod_mg, predictor = "sei")
 pet
@@ -114,17 +124,14 @@ funnel(taf)
 # Cumulative meta-analysis
 
 ## Magnesium
-update(mod_mg, data = arrange(dat_mg, vi)) |>
-  cumul()
+cumul(mod_mg, order = vi)
 
-update(mod_mg, data = arrange(dat_mg, vi)) |>
-  cumul() |>
-  forest()
+cumul(mod_mg, order = vi) |>
+  forest(top = 0) # top = 0 removes extra space from the top of the plot
 
 ## Conscientiousness
-update(mod_consc, data = arrange(dat_consc, vi)) |>
-  cumul() |>
-  forest(top = 0)
+cumul(mod_consc, order = vi) |>
+  forest(top = 0) # top = 0 removes extra space from the top of the plot
 
 ## WAAP
 estimate_power <- function(vi = NULL, sei = NULL, es, alpha = .05) {

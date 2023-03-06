@@ -56,7 +56,7 @@ dat_mg <- mutate(dat_mg, wt = weights(mod_mg))
 dat_mg[13, "wt"] <- median(dat_mg$wt)
 
 mod_mg_sensitivy <- rma(
-  yi = yi, vi = vi, data = dat_mg, weights = wt, test =
+  yi = yi, vi = vi, data = dat_mg, weights = wt, test = "knha"
 )
 
 # Normality assumption
@@ -88,34 +88,45 @@ mod_bcg_lat <- rma(
 
 
 # Linearity
-
-qplot(
-  x = fitted(mod_bcg_lat), y = residuals(mod_bcg_lat, type = "rstudent")
-) +
+data.frame(
+  fitted = fitted(mod_bcg_lat),
+  residuals = residuals(mod_bcg_lat, type = "rstudent")
+) |>
+ggplot() +
+  aes(x = fitted, y = residuals) +
   labs(
     x = "Predicted values", y = "Standardized residuals"
   ) +
   theme_bw() +
+  geom_point() +
   geom_hline(yintercept = 0) +
   geom_smooth()
 
 # Homogeneity of residuals
-qplot(
-  x = fitted(mod_bcg_lat), y = sqrt(abs(residuals(mod_bcg_lat, type = "rstudent")))
-) +
+data.frame(
+  fitted = fitted(mod_bcg_lat),
+  sqrt_resid = sqrt(abs(residuals(mod_bcg_lat, type = "rstudent")))
+) |>
+  ggplot() +
+  aes(x = fitted, y = sqrt_resid) +
   labs(
     x = "Predicted values", y = "sqrt( | Std. residuals | )"
   ) +
   theme_bw() +
+  geom_point() +
   geom_smooth()
 
 # Homogeneity of random effects
-qplot(
-  x = fitted(mod_bcg_lat), y = sqrt(abs(ranef(mod_bcg_lat)$pred))
-) +
+data.frame(
+  fitted = fitted(mod_bcg_lat),
+  sqrt_ranef = sqrt(abs(ranef(mod_bcg_lat)$pred))
+) |>
+  ggplot() +
+  aes(x = fitted, y = sqrt_ranef) +
   labs(
     x = "Predicted values", y = "sqrt( | Random effects | )"
   ) +
   theme_bw() +
+  geom_point() +
   geom_smooth()
 

@@ -1,9 +1,9 @@
 # Exercise E
 
-Use the `metafor::dat.hackshaw1998` dataset in metafor. 
+Use the `metadat::dat.hackshaw1998` dataset in metadat. 
 This dataset contains results from 37 studies on the 
 risk of lung cancer due to environmental tobacco smoke (ETS) exposure.
-See `?metafor::dat.hackshaw1998` for details.
+See `?metadat::dat.hackshaw1998` for details.
 
 The dataset already contains log **odds** ratios (`yi`) and variances (`vi`)
 so no need for `escalc()`.

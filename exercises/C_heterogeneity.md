@@ -1,9 +1,9 @@
 # Exercise C
 
-Use the `metafor::dat.bangertdrowns2004` dataset in metafor. 
+Use the `metadat::dat.bangertdrowns2004` dataset in metafor. 
 This dataset contains results from 48 studies on the 
 effectiveness of writing to learn interventions on academic achievement.
-See `?metafor::dat.bangertdrowns2004` for details.
+See `?metadat::dat.bangertdrowns2004` for details.
 
 The dataset already contains computed `yi` and `vi` values, so no need for `escalc()`.
 

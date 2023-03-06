@@ -1,0 +1,213 @@
+---
+title: "F: Diagnostics"
+format: html
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r}
+library(tidyverse)
+library(metafor)
+```
+
+
+# Exercise F
+
+Use the `metadat::dat.bangertdrowns2004` dataset in metadat. 
+This dataset contains results from 48 studies on the 
+effectiveness of writing to learn interventions on academic achievement.
+See `?metadat::dat.bangertdrowns2004` for details.
+
+The dataset already contains computed `yi` and `vi` values, so no need for `escalc()`.
+
+Fit a random effects model to these data.
+
+```{r}
+dat_g <- dat.bangertdrowns2004
+
+mod_g <- rma(
+  yi = yi ~ 1,
+  vi = vi,
+  slab = paste(id, author, year),
+  method = "REML", test = "knha",
+  data = dat_g
+)
+```
+
+  1. Create a leave-1-out forest plot.
+     Does leaving out any study substantially change the results?
+     
+```{r}
+mod_loo <- leave1out(mod_g)
+
+mod_loo
+
+range(mod_loo$estimate)
+range(sqrt(mod_loo$tau2))
+
+with(mod_loo,
+     forest(
+       x = estimate,
+       ci.lb = ci.lb, ci.ub = ci.ub,
+       refline = predict(mod_g)$pred, slab = mod_g$slab,
+       top = 0
+     )
+)
+```
+
+  - Leaving any one study out doesn't substantially change study results.
+  
+  2. Compute influence statistics for this model.
+     Examine a table of values and plots of the values.
+     Do any cases appear highly influential?
+     
+```{r}
+mod_infl <- influence(mod_g)
+
+mod_infl
+
+plot(mod_infl)
+```
+
+  - Study 46 potentially sticks out, though even its Cook's D value is relatively small.
+  
+  3. Refit your model removing any influential cases.
+     How do results change?
+     
+```{r}
+mod_sensitivity <- update(mod_g, data = filter(dat_g, id != 46))
+mod_sensitivity
+```
+
+  - Even leaving out this potential influential study does not change results.
+
+  4. Examine the distribution of standardized residuals.
+     Do these appear to be normally distributed?
+          
+```{r}
+qqnorm(mod_g)
+```
+
+  - The standardized residuals look essentially normally distributed.
+
+  5. Examine the distribution of estimated random effects.
+     Do these appear to be normally distributed?
+     
+```{r}
+qqnorm(ranef(mod_g)$pred)
+qqline(ranef(mod_g)$pred)
+```
+
+  - The random effects appear to have somewhat wider tails than expected by a
+    normal distribution, but given the number of studies, this deviation is not
+    that severe.
+
+Fit a mixed effects model to the full dataset including length of treatment as
+a moderator. 
+     
+```{r}
+dat_length <- drop_na(dat_g, length)
+
+mod_length <- rma(
+  yi = yi ~ 1 + length,
+  vi = vi,
+  slab = paste(author, year),
+  method = "REML", test = "knha",
+  data = dat_length
+)
+```
+
+  6. Examine the distribution of standardized residuals and 
+     estimated random effects for this moderated model.
+     Do these appear to be normally distributed?
+     
+```{r}
+qqnorm(mod_length)
+
+qqnorm(ranef(mod_length)$pred)
+qqline(ranef(mod_length)$pred)
+```
+
+ - Yes, both of these appear to be normally distributed. Accounting for treatment
+   length removes the overly side tails from the random effect estimates distribution.
+
+  7. Does length appear to be linearly related to the outcome measure?
+     Are the residuals and random effects homogeneous/homoskedastic?
+     
+```{r}
+# Linearity
+data.frame(
+  fitted = fitted(mod_length),
+  residuals = residuals(mod_length, type = "rstudent")
+) |>
+ggplot() +
+  aes(x = fitted, y = residuals) +
+  labs(
+    x = "Predicted values", y = "Standardized residuals"
+  ) +
+  theme_bw() +
+  geom_point() +
+  geom_hline(yintercept = 0) +
+  geom_smooth()
+
+# Homogeneity of residuals
+data.frame(
+  fitted = fitted(mod_length),
+  sqrt_resid = sqrt(abs(residuals(mod_length, type = "rstudent")))
+) |>
+  ggplot() +
+  aes(x = fitted, y = sqrt_resid) +
+  labs(
+    x = "Predicted values", y = "sqrt( | Std. residuals | )"
+  ) +
+  theme_bw() +
+  geom_point() +
+  geom_smooth()
+
+# Homogeneity of random effects
+data.frame(
+  fitted = fitted(mod_length),
+  sqrt_ranef = sqrt(abs(ranef(mod_length)$pred))
+) |>
+  ggplot() +
+  aes(x = fitted, y = sqrt_ranef) +
+  labs(
+    x = "Predicted values", y = "sqrt( | Random effects | )"
+  ) +
+  theme_bw() +
+  geom_point() +
+  geom_smooth()
+```
+
+  - Treatment length appears to be essentially linearly related to treatment effects.
+  - Both the residuals and random effects appear to have somewhat lower variance
+    when length is longer. It may be worthwhile to fit a location-scale model,
+    though the number of studies with long treatments is small, so this result
+    might must be noise.
+
+  8. Compute influence statistics for this model.
+     Do any of the meta-regression coefficients change substantially when
+     one case is removed?
+     
+```{r}
+mod_infl <- influence(mod_length)
+
+mod_infl$dfbs
+
+plot(mod_infl)
+```
+
+  - Study 46 (Willey 1988, study 1) again has somewhat large Cook's D. 
+    However, its DFBETAS values for the intercept and slope for treatment length
+    are not large (< 1).
+
+  9. Remove any influential cases and re-estimate the mixed effects model
+     How do results change?
+     
+```{r}
+mod_sensitivity <- update(mod_length, data = filter(dat_length, id != 46))
+mod_sensitivity
+```
+
+  - Even removing this one potential outlier does not substantially alter results
+    for either the intercept or the length slope.

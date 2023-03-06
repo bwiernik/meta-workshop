@@ -1,9 +1,9 @@
 # Exercise F
 
-Use the `metafor::dat.bangertdrowns2004` dataset in metafor. 
+Use the `metadat::dat.bangertdrowns2004` dataset in metadat. 
 This dataset contains results from 48 studies on the 
 effectiveness of writing to learn interventions on academic achievement.
-See `?metafor::dat.bangertdrowns2004` for details.
+See `?metadat::dat.bangertdrowns2004` for details.
 
 The dataset already contains computed `yi` and `vi` values, so no need for `escalc()`.
 
@@ -33,6 +33,7 @@ a moderator.
      Do these appear to be normally distributed?
      
   7. Does length appear to be linearly related to the outcome measure?
+     Are the residuals and random effects homogeneous/homoskedastic?
   
   8. Compute influence statistics for this model.
      Do any of the meta-regression coefficients change substantially when

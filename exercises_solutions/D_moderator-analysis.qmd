@@ -1,0 +1,300 @@
+---
+title: "D: Moderator Analyses Solutions"
+format: html
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r}
+library(tidyverse)
+library(metafor)
+```
+
+
+# Exercise D
+
+Use the `metadat::dat.bangertdrowns2004` dataset in metafor. 
+This dataset contains results from 48 studies on the 
+effectiveness of writing to learn interventions on academic achievement.
+See `?metadat::dat.bangertdrowns2004` for details.
+
+The dataset already contains computed `yi` and `vi` values, so no need for `escalc()`.
+
+1. Fit a mixed effects model using these data with `length` as a continuous predictor.
+   Use the `"REML"` estimator for tau.
+
+```{r}
+dat_g <- dat.bangertdrowns2004 |>
+  mutate(
+    grade = factor(
+      grade,
+      levels = 1:4,
+      labels = c("Elementary", "Middle", "High school", "College")
+    )
+  ) |>
+  drop_na(grade, length)
+
+mod_length <- rma(
+  yi = yi ~ 1 + length,
+  vi = vi,
+  slab = paste(author, year),
+  method = "REML", test = "knha",
+  data = dat_g
+)
+
+mod_length
+```
+
+  A. Is length of treatment related to treatment effectiveness? How so?
+  
+  - For each additional week of treatment, the size of the treatment effect 
+    is expected to increase slightly, by *d* = .01 [95% CI = -.00, .03].
+
+  B. What does the intercept mean in this model?
+  
+  - The expected treatment effect for a treatment of 0 weeks is 
+    *d* = .07 [95% CI = -.10, .24]. A treatment cannot be zero weeks, so this
+    intercept value is not directly applicable to any study
+      
+  C. Interpret R^2, F (or QM), and QE for this model.
+  
+  - *R*^2^ = .05, indicating that 5% of the residual heterogeneity across studies
+    can be accounted for by length of treatment. The *F* test has *p* = .056,
+    indicating that a null model where length has no effect is only modestly
+    compatible with the data. The *Q*~E~ test has *p* < .0001, indicating that
+    a model with no residual heterogeneity remaining is poorly supported by
+    the data. Together, these results indicate that length likely has a modest
+    impact on treatment effectiveness, but there is substantial heterogeneity
+    in effects that remain unaccounted for.
+   
+  D. Compute a confidence interval for the mean and a prediction interval
+     for individual study true outcomes. Interpret these.
+     
+```{r}
+newmods <- create_newmods(
+  mod_length,
+  data = data.frame(length = c(1, 4, 10, 15, 24))
+)
+
+predict_length <- predict(mod_length, newmods = newmods) |>
+  clean_rma_predictions(data = newmods)
+
+predict_length
+```
+
+  - For a 1-week treatment, the average treatment effect is essentially zero at
+    *d* = .08. The confidence interval ranges from -.08 to .24, indicating that
+    the mean treatment effect might range anywhere from negligibly harmful (-.08)
+    to weakly beneficial (.24). The prediction inteval ranges from .37 to .54,
+    indicating that any specific intervention might be moderately harmful (-.37)
+    to highly beneficial (.54).
+  - For a 24-week treatment, the average treatment effect is moderately positive
+    at *d* = .43. The confidence interval ranges from .18 to .67, indicating that
+    the mean treatment effect is clearly beneficial and might range anywhere 
+    from somewhat beneficial (.19) to strongly beneficial (.67). The prediction 
+    inteval ranges from -.06 to .91, indicating that any specific intervention 
+    might range from having a negligible effect (-.06) to being 
+    extremely beneficial (.92).
+      
+  E. Compute a confidence interval for tau and interpret it.
+
+```{r}
+confint(mod_length)
+```
+
+  - tau is estimated to be .21 with confidence interval ranging .14 to .36. 
+    This indicates that treatment effects are clearly heterogeneous, even
+    after accounting for treatment length, with heterogeneity ranging from small
+    (.14) to substantial (.36).
+
+  F. Create a forest plot for these results.
+     What do the grey diamonds for each study mean here?
+     
+```{r}
+forest(
+  mod_length, 
+  order = length, 
+  addfit = TRUE, 
+  ilab = na.omit(select(dat.bangertdrowns2004, length)),
+  ilab.xpos = -2
+)
+text(
+  c(-5.2, -2, 5.5), 48, 
+  c("Study", "Length", "g [95% CI]"), 
+  cex = .8
+)
+```
+
+  - The gray diamonds indicate the predicted mean treatment effect and 95%
+    confidence interval for each study.
+    
+
+2. Compare effectiveness for different grade levels.
+
+  A. Convert `grade` to a factor variable and relabel the levels from `1:4`, to
+     `c("Elementary", "Middle", "High school", "College")`.
+     
+  - See above.
+     
+  B. Fit a meta-regression model with `grade` as a predictor. 
+     What are the estimated mean outcomes for each grade level?
+     What is tau?
+     
+```{r}
+mod_grade <- rma(
+  yi = yi ~ 1 + grade,
+  vi = vi,
+  slab = paste(author, year),
+  method = "REML", test = "knha",
+  data = dat_g
+)
+
+newmods <- create_newmods(
+  mod_grade,
+  data = expand_grid(
+    grade = levels(dat_g$grade)
+  )
+)
+
+predict_grade <- predict(mod_grade, newmods = newmods) |>
+  clean_rma_predictions(data = newmods) |> 
+  arrange(grade)
+
+predict_grade
+
+confint(mod_grade)
+```
+  
+  - Treatment has similar effects among Elementary, High School, and College
+    students, with mean values ranging from *d* = .22 to .31 and lower 95% 
+    confidence bounds ranging from .07 to .09.
+  - tau was fixed to be equal across grade levels. It was estimated to be
+    .22 [95% CI .14, .35], indicating clear evidence for heterogeneity of
+    treatment effects within grade levels.
+     
+  C. Fit separate subgroup models for the Elementary and High School studies.
+     How do results of these models differ from the results from the meta-regression?
+      
+```{r}
+mod_elementary <- rma(
+  yi = yi ~ 1,
+  vi = vi,
+  slab = paste(author, year),
+  method = "REML", test = "knha",
+  data = filter(dat_g, grade == "Elementary")
+)
+
+mod_highschool <- rma(
+  yi = yi ~ 1,
+  vi = vi,
+  slab = paste(author, year),
+  method = "REML", test = "knha",
+  data = filter(dat_g, grade == "High school")
+)
+
+predict(mod_elementary)
+confint(mod_elementary)
+
+predict(mod_highschool)
+confint(mod_highschool)
+```
+
+  - Estimated mean values for Elementary and High School students were similar
+    in both models. The confidence interval for High School students was wider
+    in the subgroup model compared to the meta-regression. This is because 
+    tau was estimated to be much larger in the High School group (tau = .37)
+    compared to the pooled tau estimate from the meta-regression (tau = .22).
+    
+  D. Fit a location-scale meta-regression model `grade` as a predictor. 
+     How do results of these models differ from the results (B) and (C)?
+    
+```{r}
+mod_gradeSL <- rma(
+  yi = yi ~ 1 + grade,
+  vi = vi,
+  scale = ~ 1 + grade,
+  slab = paste(author, year),
+  method = "REML", test = "knha",
+  data = dat_g
+)
+
+newmods <- create_newmods(
+  mod_gradeSL,
+  data = expand_grid(
+    grade = levels(dat_g$grade)
+  )
+)
+
+predict_gradeSL <- predict(mod_gradeSL, newmods = newmods) |>
+  clean_rma_predictions(data = newmods) |> 
+  arrange(grade)
+
+predict_gradeSL
+
+confint(mod_gradeSL)
+```
+
+  - Results are essentially identical to the subgroup models from (C). 
+    This is because tau is estimated separately for each grade group.
+    
+3. Bonus: Does the impact of treatment length vary by grade level?
+
+```{r}
+mod_lengthGrade <- rma(
+  yi = yi ~ 1 + length * grade,
+  vi = vi,
+  slab = paste(author, year),
+  method = "REML", test = "knha",
+  data = dat_g
+)
+
+newmods <- create_newmods(
+  mod_lengthGrade,
+  data = expand_grid(
+    length = c(1, 4, 10, 15, 24),
+    grade = levels(dat_g$grade)
+  )
+)
+
+predict_lengthGrade <- predict(mod_lengthGrade, newmods = newmods) |>
+  clean_rma_predictions(data = newmods) |> 
+  arrange(grade, length)
+
+predict_lengthGrade
+```
+
+  - Intervention effectiveness does not increase with length for Elementary
+    students, but does increase strongly with length for High School and College
+    students. Interventions appear to be slightly to moderately harmful for
+    Middle School students, but there is a lot of uncertainty in this result.
+
+
+4. Bonus: Automating subgroup modeling in (2).
+
+```{r}
+## Automating the subgroup modeling
+mods_grade <- dat_g |>
+  arrange(grade) |>
+  group_by(grade) |>
+  nest() |>
+  mutate(
+    meta = list(rma(
+      yi = yi ~ 1,
+      vi = vi,
+      slab = paste(author, year),
+      method = "REML", test = "knha",
+      data = data
+    ))
+  ) |>
+  mutate(
+    meta = setNames(meta, grade),
+    k = map(meta, \(ma) ma$k),
+    predict = map(meta, \(ma) clean_rma_predictions(predict(ma))),
+    tau = map(meta, \(ma) get_tau_ci(ma))
+  ) |>
+  ungroup() |>
+  tidyr::unnest(cols = c(k, predict, tau))
+
+mods_grade
+```
+

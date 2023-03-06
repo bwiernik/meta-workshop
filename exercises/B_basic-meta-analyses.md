@@ -1,14 +1,14 @@
 # Exercise B
 
-Use the `metafor::dat.normand1999` dataset in metafor. 
+Use the `metadat::dat.normand1999` dataset in metafor. 
 This dataset contains results from 9 studies on length of 
 hospital stay in days for stroke patients who receive
 either specialized care or routine care.
-See `?metafor::dat.normand1999` for details.
+See `?metadat::dat.normand1999` for details.
       
 1. Make a new dataset with **standardized mean differences**, but compute the
    sampling error variance for studies by using the **average effect size** 
-   across the included studies by add the argument `vtype = "AV"` to your 
+   across the included studies by adding the argument `vtype = "AV"` to your 
    `escalc()` call. 
    
    A. Make a forest plot of these data. Include study labels.
@@ -28,10 +28,10 @@ See `?metafor::dat.normand1999` for details.
       sizes in research?
       
 
-Use the `metafor::dat.crede2010` dataset in metafor. 
+Use the `metadat::dat.crede2010` dataset in metafor. 
 This dataset contains results from 97 studies on the 
 association between study time and college course performance.
-See `?metafor::dat.crede2010` for details.
+See `?metadat::dat.crede2010` for details.
 
 3. Make a dataset with **unbiased correlations** as the effect size.
    Use the average effect size to compute sampling error variances.

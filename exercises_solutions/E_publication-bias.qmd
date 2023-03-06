@@ -1,0 +1,213 @@
+---
+title: "E: Publication bias"
+format: html
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r}
+library(tidyverse)
+library(metafor)
+```
+
+
+# Exercise E
+
+Use the `metadat::dat.hackshaw1998` dataset in metadat. 
+This dataset contains results from 37 studies on the 
+risk of lung cancer due to environmental tobacco smoke (ETS) exposure.
+See `?metadat::dat.hackshaw1998` for details.
+
+The dataset already contains log **odds** ratios (`yi`) and variances (`vi`)
+so no need for `escalc()`.
+
+The log odds ratios were computed so that values greater than 0 indicate 
+an increased risk of cancer in exposed women compared to women not 
+exposed to ETS from their spouse.
+
+Fit a random effects model to these data.
+
+```{r}
+dat_or <- metadat::dat.hackshaw1998
+
+mod_or <- rma(
+  yi = yi ~ 1,
+  vi = vi,
+  data = dat_or
+)
+```
+
+  1. Compute and interpret the mean *odds ratio*, the 95% confidence interval
+     for the mean, and the 95% prediction interval for individual true outcomes.
+     
+```{r}
+# Best back-transformation
+predict(mod_or, transf = transf.exp.int, targs = list(tau2 = mod_or$tau2, lower = -4, upper = 4))
+
+# Most common back-transformation
+predict(mod_or, transf = exp)
+
+# convert to probability difference (risk difference)
+## assume base rate for women is 0.000481 (https://gis.cdc.gov/Cancer/USCS/#/Demographics/)
+risk_baseline <- 0.000481
+
+## convert base rate for women to odds
+risk_exposed <- (effectsize::convert_probs_to_odds(risk_baseline) *
+    ## multiply by odds ratios to get odds for exposed women
+    as.data.frame(
+      predict(mod_or, transf = transf.exp.int, targs = list(tau2 = mod_or$tau2, lower = -4, upper = 4))
+    )
+) |> 
+  # convert odds back to probability
+  effectsize::convert_odds_to_probs()
+
+# risk among exposed group
+risk_exposed
+
+# risk difference
+risk_exposed - risk_baseline
+
+# approxomimate number of additional cases
+## assume total women's population is 168 million (https://data.worldbank.org/indicator/SP.POP.TOTL.FE.IN?locations=US)
+women_population <- 168000000
+(risk_exposed - risk_baseline) * women_population
+
+# risk ratio
+risk_exposed / risk_baseline
+
+## as seen above, the risk ratio is often very close to the odds ratio 
+## when the base rate is small
+```
+
+  - Remember to back-transform results back to the odds ratio metric using the 
+    exponential transformation. The mean odds ratio is 1.26, indicating that a
+    women's odds of contracting lung cancer are 1.26 times larger when exposed
+    to environmental tobacco smoke than when not. This might be considered a 
+    very small effect by conventional standards, but at a population level, it
+    still corresponds to thousands of additional cases of cancer. The confidence
+    interval is narrow [1.14, 1.39], indicating confidence that the average
+    exposure effect has this relatively small magnitude. The prediction interval
+    ranges from negligible (0.92) to small (1.71), indicating that that there 
+    is relatively little heterogeneity in exposure effects across studies.
+     
+  2. Create a funnel plot for these data. 
+     Does the plot suggest potential for publiccation bias?
+     What sort of studies appear to be missing (if any)? 
+     (i.e., what size of effects would those missing studies have?)
+     
+```{r}
+funnel(mod_or)
+
+funnel(
+    mod_or, 
+    level = c(90, 95, 99), # add confidence contours
+    shade = c("white", "gray55", "gray75"), # colors for confidence regions
+    refline = 0, # funnel reference line at 0, rather than mean effect size 
+    legend = TRUE
+)
+```
+
+  - Yes, the there seems to be potential for publication bias. The funnel plot
+    appears somewhat asymmetrical, with studies missing from the lower left corner
+    (which would reflect null or beneficial exposure effects from small studies).
+  - Examining the contour-enhanced funnel plot, there is a concentration of
+    studies in the "danger zone" with *p* values between .05 and .01 and almost
+    no studies with *p* values less than .01. This is suggestive of "p hacking".
+     
+  3. Estimate PET and PEESE regression tests. 
+     Make a funnel plot with regression lines from these models.
+     What do these tests suggest? 
+     What is our best estimate for a "bias-free" mean effect based on these models?
+     
+```{r}
+pet <- regtest(mod_or, predictor = "sei")
+pet
+transf.exp.int(pet$est, targs = list(tau2 = pet$fit$tau2, lower = -4, upper = 4))
+
+peese <- regtest(mod_or, predictor = "vi")
+peese
+transf.exp.int(peese$est, targs = list(tau2 = peese$fit$tau2, lower = -4, upper = 4))
+
+funnel(mod_or, refline = 0) # centering funnel plot at 0
+se <- seq(from = 0, to = max(sqrt(dat_or$vi)) * 1.05, length.out = 100)
+lines(x = coef(pet$fit)[1] + coef(pet$fit)[2] * se, y = se, lwd = 2, col = "darkblue")
+lines(x = coef(peese$fit)[1] + coef(peese$fit)[2] * se^2, y = se, lwd = 2, lty = "dashed", col = "darkgreen")
+abline(v = predict(mod_or)$pred, lwd = 2)
+```
+
+  - The PET test suggests severe publication bias, with no exposure effect
+    remaining after adjustment (adjusted log OR = .02, OR = 1.02), 
+    and the confidence interval for the adjusted log OR includes 0. 
+  - The PEESE test suggests more modest publication bias, with only a small
+    reduction in the adjusted exposure effect (adjusted log OR = .14, OR = 1.16).
+  - The PET-PEESE convention says to retain the PET estimate (OR = 1.02). 
+    The "true" exposure effect likely falls between 1.02 and 1.14.
+     
+  4. Conduct a cumulative meta-analysis and plot the results.
+     What does this plot suggest?
+     Compute the WAAP estimate of the meta-analysis model.
+     
+```{r}
+cumul(mod_or, order = vi) |> 
+  forest(top = 0) # top = 0 removes extra space from the top of the plot
+
+estimate_power <- function(vi = NULL, sei = NULL, es, alpha = .05) {
+  if (is.null(sei)) {
+    if (is.null(vi)) stop("Either `vi` or `sei` must be supplied.")
+    sei <- sqrt(vi)
+  }
+  q_alpha <- qnorm(alpha / 2, lower.tail = FALSE)
+  pnorm(abs(es) / sei - q_alpha)
+}
+
+filter(dat_or, estimate_power(vi = vi, es = predict(mod_or)$pred) >= .80)
+
+# No studies have power >= .80, so not studies are "adequately" powered
+
+# if we estimate a model with studies with power >= .50 (still pretty bad), 
+# only the largest study is retained
+rma(yi ~ 1, vi = vi,
+    data = filter(dat_or, estimate_power(vi = vi, es = predict(mod_or)$pred) >= .50),
+    method = "REML", test = "knha")
+```
+
+  - The cumulative meta-analysis shows a small effect in the largest study,
+    then a null average effect once the next largest studies are added. When
+    the smaller studies are added, the mean slowly drifts upward. This suggest
+    potential for publication bias.
+  - No studies have power >= .80 based on the meta-analytic mean effect,
+    so a WAAP model cannot really be estimated. Only the largest study has 
+    power >= .50. Given the small effect observed in this literature even
+    in the presence of publication bias, larger studies are needed to understand
+    the epidemiological impacts of environmental tobacco smoke exposure on 
+    lung cancer risk.
+     
+  5. Fit selection models (either logistic, or step, or both if possible).
+     If you fit a step model, think about appropriate p value thresholds.
+     Think about the possible direction of the selection; 
+       what should the 'alternative' argument be set to?)
+     Do these models suggest a possible selection effect?
+     
+```{r}
+sel_logit <- selmodel(mod_or, type = "logistic", alternative = "greater")
+  # alternative = "less" (left) or "greater" (right) to indicate which side
+  # of the funnel plot the effects are on (not censored), or "two.sided" for either
+sel_logit
+predict(sel_logit, transf = transf.exp.int, targs = list(tau2 = sel_logit$tau2, lower = -4, upper = 4))
+plot(sel_logit)
+
+sel_step2 <- selmodel(mod_or, type = "stepfun", steps = c(.05, .10), alternative = "greater")
+sel_step2
+predict(sel_step2, transf = transf.exp.int, targs = list(tau2 = sel_logit$tau2, lower = -4, upper = 4))
+plot(sel_step2)
+```
+
+  - The logistic selection model suggests strong publication bias, with an
+    adjusted exposure log odds ratio of .03 (adjusted OR = 1.05). 
+  - However, it is notable that most of the studies in the meta-analysis have
+    *p* > .10, so the step function actually suggests selection *against* larger
+    effect sizes. This form of selection isn't really consistent with the 
+    asymmetry of the funnel plot or expectations about publication bias in this
+    literature. Accordingly, the step function model is best interpreted as 
+    suggesting there is little publication bias.
+    

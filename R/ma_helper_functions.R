@@ -11,11 +11,11 @@ confint_ztor <- function(ma_obj) {
   return(ci)
 }
 
-create_newmods <- function(ma_obj, data = "grid", ...) {
+create_newmods <- function(ma_obj, data = "grid", verbose = FALSE, ...) {
   if (!is.data.frame(data) && !identical(data, "grid")) {
     stop("`data` must either be 'grid' or a data frame.")
   }
-  mod_data <- insight::get_data(ma_obj)
+  mod_data <- insight::get_data(ma_obj, verbose = verbose)
   if (!is.null(ma_obj$formula.yi)) {
     mod_formula <- formula(ma_obj, type = "yi")
   } else {

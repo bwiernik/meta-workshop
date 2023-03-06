@@ -1,9 +1,9 @@
 # Exercise D
 
-Use the `metafor::dat.bangertdrowns2004` dataset in metafor. 
+Use the `metadat::dat.bangertdrowns2004` dataset in metadat. 
 This dataset contains results from 48 studies on the 
 effectiveness of writing to learn interventions on academic achievement.
-See `?metafor::dat.bangertdrowns2004` for details.
+See `?metadat::dat.bangertdrowns2004` for details.
 
 The dataset already contains computed `yi` and `vi` values, so no need for `escalc()`.
 
@@ -35,4 +35,7 @@ The dataset already contains computed `yi` and `vi` values, so no need for `esca
      
   C. Fit separate subgroup models for the Elementary and High School studies.
      How do results of these models differ from the results from the meta-regression?
+     
+  D. Fit a location-scale meta-regression model `grade` as a predictor. 
+     How do results of these models differ from the results (B) and (C)?
       

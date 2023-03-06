@@ -1,0 +1,152 @@
+---
+title: "C: Heterogeneity"
+format: html
+editor_options: 
+  chunk_output_type: console
+---
+
+# Exercise C
+
+Use the `metadat::dat.bangertdrowns2004` dataset in metafor. 
+This dataset contains results from 48 studies on the 
+effectiveness of writing to learn interventions on academic achievement.
+See `?metadat::dat.bangertdrowns2004` for details.
+
+The dataset already contains computed `yi` and `vi` values, so no need for `escalc()`.
+
+Fit a random effects model using these data.
+Use either the `"HSk"` or `"DL"` estimator for tau. 
+Then, fit a second model using the `"REML"` estimator for tau.
+
+```{r}
+dat_g <- dat.bangertdrowns2004
+
+mod_hsk <- rma(
+  yi = yi ~ 1,
+  vi = vi,
+  slab = paste(id, author, year),
+  method = "HSk", test = "knha",
+  data = dat_g
+)
+
+mod_dl <- rma(
+  yi = yi ~ 1,
+  vi = vi,
+  slab = paste(id, author, year),
+  method = "DL", test = "knha",
+  data = dat_g
+)
+
+mod_reml <- rma(
+  yi = yi ~ 1,
+  vi = vi,
+  slab = paste(id, author, year),
+  method = "REML", test = "knha",
+  data = dat_g
+)
+```
+
+   A. Compare the estimate of tau for the two models.
+   
+```{r}
+confint(mod_hsk)
+confint(mod_dl)
+confint(mod_reml)
+```
+
+  - The HSk and DL estimators both estimate tau to be about .21. The REML
+    estimator estimates it to be slightly larger at .22. This is typical, 
+    as the closed-form estimators (HSk and DL) are somewhat negatively biased.
+   
+   B. Interpret the results of the REML model, including the regression
+      coefficients and tau.
+      
+```{r}
+mod_reml
+confint(mod_reml)
+```
+
+   - The average treatment effect is estimated to be *g* = .22 standard deviations
+     improvement in reading performance due to the reading intervention. Tau is
+     estimated to be .22, indicating that treatment effects are estiamted to
+     vary around the mean on average by about .22.
+      
+   C. Compute a confidence interval for the mean and a prediction interval
+      for individual true outcomes. Interpret these.
+      
+```{r}
+predict(mod_reml)
+```
+
+  - The confidence interval for the mean ranges from .12 to .32. This indicates
+    uncertainty in the *average* treatment effect, the range where we expect the
+    true mean effect to be. This interval indicates we are confident that the
+    average effect of the reading intervention is small and positive.
+  - The prediction interval for individual studies ranges from -.24 to .68. This
+    indicates the range where we expect true individual study effects to fall.
+    This indicates that although we are confident the average intervention effect
+    is small and positive, we still expect some settings (i.e., studies) where 
+    the treatment is very beneficial (.68) and some settings where it might be
+    somewhat harmful (-.24).
+      
+   D. Compute a confidence interval for tau and interpret it.
+      Also interpret tau^2, I^2, and H^2.
+      
+```{r}
+mod_reml
+confint(mod_reml)
+```
+
+  - Tau is estimated to be .22 with confidence interval [.16, .39].
+    This is the standard deviation of true study effects around the mean.
+    These values indicate a moderate amount of heterogeneity, with the uncertainty
+    interval ranging from small to very large amounts of heterogeneity.
+  - Tau^2 is the estimated *variance* of true study effects. It is typically 
+    easier to to interpret tau instead.
+  - I^2 is the estimated percent of the total variability that is not accounted
+    for by sampling error and that may be due to moderators. It is a *relative*
+    measure of heterogeneity and so should be interpreted cautiously.
+    We estimated that 58% of the observed variability in effect sizes across
+    studies is not due to artefacts (and may be due to moderators).
+  - H^2 is the ratio of total variability to sampling (error) variability.
+    It can be interpreted as a sort of signal to noise ratio.
+      
+   E. Create a forest plot for these results.
+      Be sure to include a prediction interval.
+      
+```{r}
+forest(mod_reml, addpred = TRUE)
+```
+
+   F. Compute BLUPs from this model. 
+      What do these values mean?   
+      Which studies will be adjusted the most?
+      
+```{r}
+blups_reml <- blup(mod_reml) |> 
+  as.data.frame() |> 
+  rownames_to_column("study")
+
+dat_blup <- bind_rows(
+  observed = dat_g |> mutate(
+    pred = yi,
+    se = sqrt(vi),
+    pi.lb = yi - qnorm(.975) * se, 
+    pi.ub = yi + qnorm(.975) * se,
+    study = paste(id, author, year)
+  ),
+  blup = blups_reml,
+  .id = "type"
+)
+
+ggplot(dat_blup) +
+  aes(y = study, x = pred, xmin = pi.lb, xmax = pi.ub, shape = type, color = type) +
+  geom_pointrange(position = position_dodge(width = .75)) +
+  see::theme_modern() +
+  see::scale_color_okabeito()
+```
+
+  - These are the shrunken effects for each study -- our best estimate of the
+    true effect for each study after adjusting for likely sampling error.
+    The studies that are adjusted most will be the studies with (1) lots of
+    sampling error, and (2) the most extreme effect sizes.
