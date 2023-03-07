@@ -74,7 +74,7 @@ predict(mod_reml)
 predict(mod_reml, transf = transf.ztor)
 
 ## slightly more accurate back transformation
-predict(mod_reml, transf = transf.ztor.int, targs = list(tau2 = mod_reml$tau2))
+predict(mod_reml, transf = transf.ztor.int, targs = list(tau2 = mod_reml$tau2, lower = -4, upper = 4))
 
 
 # BLUPs

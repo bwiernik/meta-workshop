@@ -25,7 +25,7 @@ mod_bcg_re
 predict(mod_bcg_re, transf = exp)
 
 # Somewhat more accurate back-transformation
-predict(mod_bcg_re, transf = transf.exp.int, targs = list(tau2 = mod_bcg_re$tau2))
+predict(mod_bcg_re, transf = transf.exp.int, targs = list(tau2 = mod_bcg_re$tau2, lower = -4, uppper = 4))
 
 # add latitude as a predictor
 
@@ -41,7 +41,9 @@ mod_bcg_lat
 mod_bcg_re$tau2
 
 # Forest plot
-forest(mod_bcg_lat, order = dat_bcg$ablat)
+forest(mod_bcg_lat, order = ablat)
+
+forest(mod_bcg_lat, order = ablat, addpred = )
 
 # Predictions
 
@@ -80,7 +82,7 @@ regplot(
   pi = TRUE,
   refline = 0,
   label = c(7, 12),
-  xlab="Absolute Latitude"
+  xlab = "Absolute Latitude"
 )
 
 ## RR
@@ -89,7 +91,7 @@ regplot(
   pi = TRUE,
   transf = exp, refline = 1,
   label = c(7, 12),
-  xlab="Absolute Latitude"
+  xlab = "Absolute Latitude"
 )
 
 # Meta-regression -- categorical moderators
@@ -182,4 +184,9 @@ mod_structured_job <- rma(
   method = "REML", test = "knha",
   data = filter(dat_interview, struct == "Structured", type == "Job-related")
 )
+
+predict(mod_structured_job)
+
+mod_interview_structType$tau2
+mod_structured_job$tau2
 

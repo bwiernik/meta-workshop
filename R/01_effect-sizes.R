@@ -64,7 +64,7 @@ dat_attend <- mutate(
   dat_attend,
   cor = transf.ztor(yi),
   ci.lb = transf.ztor(yi - qnorm(.975) * sqrt(vi)),
-  ci.ub = transf.ztor(yi + qnorm(.975) * sqrt(vi)),
+  ci.ub = transf.ztor(yi + qnorm(.975) * sqrt(vi))
 )
 as_tibble(dat_attend)
 

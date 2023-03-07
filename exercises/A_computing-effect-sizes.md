@@ -9,7 +9,7 @@ See `?metafor::dat.curtis1998` for details.
    as the effect size. Use the **sample effect size estimate** to compute
    the sampling error variance.
    
-   A. Construct confidence intervals for each effect size using a normal distribtion.
+   A. Construct confidence intervals for each effect size using a normal distribution.
    
    B. Why might using the sample effect size estimate to compute sampling error
       variance be a problem?
