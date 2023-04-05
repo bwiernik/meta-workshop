@@ -24,7 +24,16 @@
   [x] D: Meta-regression, moderator analysis,
 
   [x] E: Publication bias
-  [ ] F: Diagnostics
+  [x] F: Diagnostics
 
   [ ] G: Systematic review critique
   [ ] H: Artefact correction
+  
+  
+  brms
+https://rmetaverse.github.io
+You to Everyone (Mar 9, 2023, 08:36)
+https://press.princeton.edu/books/hardcover/9780691137285/handbook-of-meta-analysis-in-ecology-and-evolution
+https://bookdown.org/robcrystalornelas/meta-analysis_of_ecological_data/
+https://psycnet.apa.org/record/1996-04469-005
+https://www.bmj.com/content/340/bmj.c221

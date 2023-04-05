@@ -8,6 +8,7 @@ editor_options:
 ```{r}
 library(tidyverse)
 library(metafor)
+source(file.path("R", "ma_helper_functions.R"))
 ```
 
 
@@ -80,6 +81,8 @@ predict_length <- predict(mod_length, newmods = newmods) |>
   clean_rma_predictions(data = newmods)
 
 predict_length
+
+regplot(mod_length)
 ```
 
   - For a 1-week treatment, the average treatment effect is essentially zero at

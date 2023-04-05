@@ -27,6 +27,7 @@ mod_school_robust <- robust(
 )
 mod_school_robust
 
+
 ## Multilevel model
 mod_school_ml <- rma.mv(
   yi = yi ~ 1,
@@ -40,7 +41,7 @@ mod_school_ml <- rma.mv(
 mod_school_ml
 
 forest(
-  mod_school_multilevel,
+  mod_school_ml,
   ilab = select(dat_school, district, school),
   ilab.xpos = c(-2.5, -1.5),
   header = TRUE,
@@ -70,6 +71,7 @@ V <- vcalc(
   cluster = author,
   type = outcome, rho = .5
 )
+
   # Basic options with vcalc()
   #
   # - rvars = columns giving the full correlation matrix for the multiple outcomes
